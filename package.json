@@ -1,0 +1,27 @@
+{
+  "name": "value-validator",
+  "version": "1.0.0",
+  "description": "value-validator",
+  "main": "./lib",
+  "scripts": {
+    "test": "ava --verbose --timeout=10s"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kaelzhang/value-validator.git"
+  },
+  "keywords": [
+    "value-validator"
+  ],
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "author": "kaelzhang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kaelzhang/value-validator/issues"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0"
+  }
+}
