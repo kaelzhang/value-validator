@@ -1,7 +1,7 @@
 {
   "name": "value-validator",
   "version": "1.0.0",
-  "description": "value-validator",
+  "description": "Low-level rule manager for validating values.",
   "main": "./lib",
   "scripts": {
     "test": "ava --verbose --timeout=10s"
@@ -11,7 +11,10 @@
     "url": "git://github.com/kaelzhang/value-validator.git"
   },
   "keywords": [
-    "value-validator"
+    "value-validator",
+    "validator",
+    "regexp",
+    "async"
   ],
   "engines": {
     "node": ">=0.10.0"
