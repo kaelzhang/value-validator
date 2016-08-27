@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "async": "^2.0.1",
-    "make-array": "^1.0.1"
+    "make-array": "^1.0.1",
+    "wrap-as-async": "^1.2.2"
   }
 }

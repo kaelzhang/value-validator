@@ -38,6 +38,10 @@ class Validator {
       tester.call(this.context, v, done)
     }, (err, pass) => {
       if (err) {
+        err = typeof err === 'string'
+          ? new Error(err)
+          : err
+
         return callback(err, false)
       }
 
@@ -64,7 +68,7 @@ class Validator {
     }
 
     if (typeof rule === 'function') {
-      return wrap(fule)
+      return wrap(rule)
     }
 
     if (util.isRegExp(rule)) {

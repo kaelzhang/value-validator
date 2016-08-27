@@ -10,6 +10,56 @@ const cases = [
     test: /1\d{10}/,
     value: '1880000',
     error: true
+  },
+  {
+    title: 'function, returns boolean, fail',
+    test: (v) => {
+      return v > 10
+    },
+    value: 5,
+    error: true
+  },
+  {
+    title: 'function, returns boolean, pass',
+    test: (v) => {
+      return v > 10
+    },
+    value: 11
+  },
+  {
+    title: 'async function, pass',
+    test: function (v) {
+      const done = this.async()
+      setTimeout(() => {
+        if (v < 0) {
+          return done(null)
+
+        }
+
+        done('not minus')
+      }, 10)
+    },
+    error: 'not minus'
+  },
+  {
+    title: 'function, returns Error',
+    test: (v) => {
+      if (v > 10) {
+        return true
+      }
+
+      return new Error('a')
+    },
+    error: 'a'
+  },
+  {
+    title: 'array tester',
+    test: [
+      /\d{11}/,
+      /1\d{10}/
+    ],
+    value: '08800001111',
+    error: true
   }
 ]
 
@@ -20,10 +70,12 @@ cases.forEach((c) => {
     value,
     error,
     only,
-    codec
+    codec,
+    initError
   } = c
 
-  const description = title || `${test.toString()} : ${value}`
+  const description = title
+    || `${test.toString()}, ${value}, ${error ? 'fail' : 'pass'}`
 
   const _test = only
     ? ava.only.cb
@@ -36,10 +88,26 @@ cases.forEach((c) => {
   }
 
   _test(description, t => {
-    new Validator(test, options).check(value, (err, success) => {
+    let v
+
+    try {
+      v = new Validator(test, options)
+    } catch (e) {
+      if (initError) {
+        t.end()
+        return
+      }
+    }
+
+    if (initError) {
+      t.fail()
+    }
+
+    v.check(value, (err, success) => {
       if (!error) {
         if (err) {
           t.fail()
+          t.end()
           return
         }
 
@@ -48,10 +116,11 @@ cases.forEach((c) => {
         return
       }
 
-      if (error instanceof Error) {
-        t.is(error, err.message)
-      } else {
+      if (error === true) {
         t.is(err, true)
+      } else {
+        t.is(err instanceof Error, true)
+        t.is(error, err.message)
       }
 
       t.is(success, false)
