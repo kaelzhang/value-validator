@@ -4,23 +4,26 @@ const make_array = require('make-array')
 const wrap = require('wrap-as-async')
 const async = require('async')
 
+const util = require('util')
 
-module.exports = class Validator {
+
+class Validator {
   constructor (rules, {
     codec = default_codec
   } = {}) {
+
+    this._codec = codec
+    this._presets = {}
+    this._context = null
+    this._rules = []
+
     make_array(rules).forEach((rule) => {
       this.add(rule)
     })
-
-    this.codec = codec
-    this._presets = {}
-    this.context = null
-    this._rules = []
   }
 
   context (context) {
-    this.context = context
+    this._context = context
     return this
   }
 
@@ -31,7 +34,19 @@ module.exports = class Validator {
   }
 
   check (v, callback) {
+    async.everySeries(this._rules, (tester, done) => {
+      tester.call(this.context, v, done)
+    }, (err, pass) => {
+      if (err) {
+        return callback(err, false)
+      }
 
+      if (!pass) {
+        return callback(true, false)
+      }
+
+      callback(null, true)
+    })
   }
 
   registerPreset (name, method) {
@@ -122,3 +137,6 @@ Validator.registerPreset = (name, method) => {
   Validator.PRESETS[name] = method
   return Validator
 }
+
+
+module.exports = Validator

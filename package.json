@@ -2,7 +2,7 @@
   "name": "value-validator",
   "version": "1.0.0",
   "description": "Low-level rule manager for validating values.",
-  "main": "./lib",
+  "main": "./src",
   "scripts": {
     "test": "ava --verbose --timeout=10s"
   },
