@@ -9,18 +9,12 @@ const util = require('util')
 
 class Validator {
   constructor (rules, {
-    codec = default_codec,
-    presets
+    codec = default_codec
   } = {}) {
 
     this._codec = codec
-    this._presets = {}
     this._context = null
     this._rules = []
-
-    if (presets) {
-      this._setPresets(presets)
-    }
 
     make_array(rules).forEach((rule) => {
       this.add(rule)
@@ -33,12 +27,11 @@ class Validator {
   }
 
   add (rule) {
-    const cleaned = this._sanitize(rule)
-    this._rules = this._rules.concat(cleaned)
+    this._add(rule)
     return this
   }
 
-  check (v, callback) {
+  validate (v, callback) {
     async.everySeries(this._rules, (tester, done) => {
       const isAsync = tester.call(
         this._context, v,
@@ -58,29 +51,16 @@ class Validator {
     })
   }
 
-  _setPresets (map) {
-    let key
-    for (key in map) {
-      this._setPreset(key, map[key])
-    }
-
-    return this
-  }
-
-  _setPreset (name, method) {
-    if (name in this._presets) {
-      throw new Error(`value-validator: preset "${name}" defined.`)
-    }
-
-    this._presets[name] = method
-    return this
-  }
-
-  _sanitize (rule) {
+  // @returns {function()} wrapped
+  _add (rule) {
     if (typeof rule === 'string') {
       return this._decodePreset(rule)
     }
 
+    this._rules.push(this._wrapRule(rule))
+  }
+
+  _wrapRule (rule) {
     if (typeof rule === 'function') {
       return wrap(rule)
     }
@@ -100,32 +80,45 @@ class Validator {
 
   _decodePreset (rule) {
     return this._codec(rule)
-    .map(({name, args}) => {
-      const method = this._presets[name] || Validator.PRESETS[name]
+    .forEach(({name, args}) => {
+      const preset = Validator.PRESETS[name]
 
-      if (!method) {
+      if (!preset) {
         throw new Error(`value-validator: unknown preset "${name}".`)
       }
 
-      // The first argument is the value
-      const expectedArgLength = method.length - 1
-      const wrapped = wrap(method)
-
-      if (expectedArgLength !== args.length) {
-        const message = expectedArgLength === 1
-          ? `one argument`
-          : `${argLength} arguments.`
-
-        throw new Error(
-          `value-validator: preset "${name}" only accepts ${message}`
-        )
+      if (typeof preset === 'function') {
+        this._rules.push(this._wrapWithArgs(preset, args))
+        return
       }
 
-      return function (v, callback) {
-        const realArgs = [v, ...args, callback]
-        return wrapped.apply(this, realArgs)
+      // if a preset is a set,
+      // then ignore args
+      if (util.isArray(preset)) {
+        preset.forEach(this._add, this)
       }
     })
+  }
+
+  _wrapWithArgs (method, args) {
+    // The first argument is the value
+    const expectedArgLength = method.length - 1
+    const wrapped = wrap(method)
+
+    if (expectedArgLength !== args.length) {
+      const message = expectedArgLength === 1
+        ? `one argument`
+        : `${argLength} arguments.`
+
+      throw new Error(
+        `value-validator: preset "${name}" only accepts ${message}`
+      )
+    }
+
+    return function (v, callback) {
+      const realArgs = [v, ...args, callback]
+      return wrapped.apply(this, realArgs)
+    }
   }
 }
 
@@ -173,12 +166,18 @@ Validator.PRESETS = {}
 
 
 // Registers a global preset
-Validator.registerPreset = (name, method) => {
+Validator.registerPreset = (name, preset) => {
   if (name in Validator.PRESETS) {
     throw new Error(`value-validator: preset "${name}" defined.`)
   }
 
-  Validator.PRESETS[name] = method
+  if (typeof preset !== 'function' && !util.isArray(preset)) {
+    throw new TypeError(
+      `value-validator: preset only accepts function or array.`
+    )
+  }
+
+  Validator.PRESETS[name] = preset
   return Validator
 }
 

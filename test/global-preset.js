@@ -23,12 +23,21 @@ Validator.registerPresets({
 
       done(null)
     }, 10)
-  }
+  },
+
+  between: (v, min, max) => {
+    return v.length >= Number(min) && v.length <= Number(max)
+  },
+
+  'min-length-6-username': [
+    'min-length:6',
+    'username'
+  ]
 })
 
 
 test.cb('simple global preset', t => {
-  new Validator('mobile').check('18800001111', (err, result) => {
+  new Validator('mobile').validate('18800001111', (err, result) => {
     t.is(err, null)
     t.is(result, true)
     t.end()
@@ -36,7 +45,7 @@ test.cb('simple global preset', t => {
 })
 
 test.cb('preset with arguments', t => {
-  new Validator('max-length:3').check('1234', (err, result) => {
+  new Validator('max-length:3').validate('1234', (err, result) => {
     t.is(err, null)
     t.is(result, false)
     t.end()
@@ -56,7 +65,7 @@ test.cb('preset with improper length of arguments', t => {
 })
 
 test.cb('multiple presets, [1, 3] test "12"', t => {
-  new Validator('max-length:3|min-length:1').check('12', (err, result) => {
+  new Validator('max-length:3|min-length:1').validate('12', (err, result) => {
     t.is(err, null)
     t.is(result, true)
     t.end()
@@ -64,7 +73,7 @@ test.cb('multiple presets, [1, 3] test "12"', t => {
 })
 
 test.cb('multiple presets, [1, 3] test "1234"', t => {
-  new Validator('max-length:3|min-length:1').check('1234', (err, result) => {
+  new Validator('max-length:3|min-length:1').validate('1234', (err, result) => {
     t.is(err, null)
     t.is(result, false)
     t.end()
@@ -72,7 +81,7 @@ test.cb('multiple presets, [1, 3] test "1234"', t => {
 })
 
 test.cb('multiple presets, [1, 3] test ""', t => {
-  new Validator('max-length:3|min-length:1').check('', (err, result) => {
+  new Validator('max-length:3|min-length:1').validate('', (err, result) => {
     t.is(err, null)
     t.is(result, false)
     t.end()
@@ -80,7 +89,15 @@ test.cb('multiple presets, [1, 3] test ""', t => {
 })
 
 test.cb('async preset, min:6, and username, foo, fail', t => {
-  new Validator('min-length:6|username').check('foo', (err, result) => {
+  new Validator('min-length:6|username').validate('foo', (err, result) => {
+    t.is(err, null)
+    t.is(result, false)
+    t.end()
+  })
+})
+
+test.cb('min-length-6-username, foo, fail', t => {
+  new Validator('min-length-6-username').validate('foo', (err, result) => {
     t.is(err, null)
     t.is(result, false)
     t.end()
@@ -88,7 +105,7 @@ test.cb('async preset, min:6, and username, foo, fail', t => {
 })
 
 test.cb('async preset, min:3, and username, foo, fail', t => {
-  new Validator('min-length:3|username').check('foo', (err, result) => {
+  new Validator('min-length:3|username').validate('foo', (err, result) => {
     t.is(err instanceof Error, true)
     t.is(err.message, 'foo already taken')
     t.is(result, false)
@@ -97,7 +114,15 @@ test.cb('async preset, min:3, and username, foo, fail', t => {
 })
 
 test.cb('async preset, min:3, and username, bar, success', t => {
-  new Validator('min-length:3|username').check('bar', (err, result) => {
+  new Validator('min-length:3|username').validate('bar', (err, result) => {
+    t.is(err, null)
+    t.is(result, true)
+    t.end()
+  })
+})
+
+test.cb('preset with multiple arguments', t => {
+  new Validator('between:2,6').validate('1234', (err, result) => {
     t.is(err, null)
     t.is(result, true)
     t.end()

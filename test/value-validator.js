@@ -62,42 +62,6 @@ const cases = [
     ],
     value: '08800001111',
     pass: false
-  },
-  {
-    title: 'preset',
-    test: [
-      'maxlength:5'
-    ],
-    presets: {
-      maxlength: (v, max) => {
-        return v.length <= Number(max)
-      }
-    },
-    value: '1234'
-  },
-  {
-    title: 'preset with multiple arguments',
-    test: [
-      'between:2,6'
-    ],
-    presets: {
-      between: (v, min, max) => {
-        return v.length >= Number(min) && v.length <= Number(max)
-      }
-    },
-    value: '1234'
-  },
-  {
-    title: 'preset init error',
-    test: [
-      'maxlength:5,6'
-    ],
-    presets: {
-      maxlength: (v, max) => {
-        return v.length <= Number(max)
-      }
-    },
-    initError: true
   }
 ]
 
@@ -108,10 +72,7 @@ cases.forEach((c) => {
     value,
     error,
     pass,
-    only,
-    codec,
-    initError,
-    presets
+    only
   } = c
 
   const result = pass === false
@@ -125,35 +86,19 @@ cases.forEach((c) => {
     ? ava.only.cb
     : ava.cb
 
-  let options = {}
-
-  if (codec) {
-    options.codec = codec
-  }
-
-  if (presets) {
-    options.presets = presets
-  }
-
   _test(description, t => {
     let v
 
     try {
-      v = new Validator(test, options)
+      v = new Validator(test)
     } catch (e) {
-      if (!initError) {
-        t.fail()
-        t.end()
-        return
-      }
-    }
-
-    if (initError) {
+      console.error(e)
+      t.fail()
       t.end()
       return
     }
 
-    v.check(value, (err, success) => {
+    v.validate(value, (err, success) => {
       t.is(success, result)
 
       if (err) {
