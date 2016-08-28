@@ -9,13 +9,18 @@ const util = require('util')
 
 class Validator {
   constructor (rules, {
-    codec = default_codec
+    codec = default_codec,
+    presets
   } = {}) {
 
     this._codec = codec
     this._presets = {}
     this._context = null
     this._rules = []
+
+    if (presets) {
+      this._setPresets(presets)
+    }
 
     make_array(rules).forEach((rule) => {
       this.add(rule)
@@ -35,25 +40,34 @@ class Validator {
 
   check (v, callback) {
     async.everySeries(this._rules, (tester, done) => {
-      tester.call(this.context, v, done)
+      const isAsync = tester.call(
+        this._context, v,
+        (err, pass) => {
+          err = typeof err === 'string'
+            ? new Error(err)
+            : err || null
+
+          pass = determine_pass(err, pass)
+          done(err, pass)
+        }
+      )
     }, (err, pass) => {
-      if (err) {
-        err = typeof err === 'string'
-          ? new Error(err)
-          : err
-
-        return callback(err, false)
-      }
-
-      if (!pass) {
-        return callback(true, false)
-      }
-
-      callback(null, true)
+      // async.everySeries sets `pass` as `undefined`
+      // if there is an error encountered.
+      callback(err, determine_pass(err, pass))
     })
   }
 
-  registerPreset (name, method) {
+  _setPresets (map) {
+    let key
+    for (key in map) {
+      this._setPreset(key, map[key])
+    }
+
+    return this
+  }
+
+  _setPreset (name, method) {
     if (name in this._presets) {
       throw new Error(`value-validator: preset "${name}" defined.`)
     }
@@ -85,7 +99,7 @@ class Validator {
   }
 
   _decodePreset (rule) {
-    return this.codec(rule)
+    return this._codec(rule)
     .map(({name, args}) => {
       const method = this._presets[name] || Validator.PRESETS[name]
 
@@ -94,11 +108,17 @@ class Validator {
       }
 
       // The first argument is the value
-      const argLength = method.length - 1
+      const expectedArgLength = method.length - 1
       const wrapped = wrap(method)
 
-      if (argLength !== args.length) {
-        throw new Error(`value-validator: preset "${name}" only accepts ${argLength} arguments.`)
+      if (expectedArgLength !== args.length) {
+        const message = expectedArgLength === 1
+          ? `one argument`
+          : `${argLength} arguments.`
+
+        throw new Error(
+          `value-validator: preset "${name}" only accepts ${message}`
+        )
       }
 
       return function (v, callback) {
@@ -110,16 +130,36 @@ class Validator {
 }
 
 
-function default_codec (tester) {
-  return tester.split('|').map((tester) => {
-    tester = tester.trim()
+// @returns {Boolean}
+function determine_pass (err, pass) {
+  return err
+    ? false
+    : pass === false
+      ? false
+      : true
+}
 
-    const splitted = tester.split(':')
-    const args = splitted[1]
-      .join(':')
+
+function default_codec (tester) {
+  return tester.split('|')
+  .filter((tester) => {
+    return !!tester.trim()
+  })
+  .map((tester) => {
+
+    tester = tester.trim()
+    const index = tester.indexOf(':')
+    if (!~index) {
+      return {
+        name: tester,
+        args: []
+      }
+    }
+
+    const name = tester.slice(0, index).trim()
+    const args = tester.slice(index + 1)
       .split(',')
       .map((arg) => arg.trim())
-    const method = splitted[0]
 
     return {
       name,
@@ -139,6 +179,15 @@ Validator.registerPreset = (name, method) => {
   }
 
   Validator.PRESETS[name] = method
+  return Validator
+}
+
+
+Validator.registerPresets = (map) => {
+  let key
+  for (key in map) {
+    Validator.registerPreset(key, map[key])
+  }
   return Validator
 }
 

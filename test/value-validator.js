@@ -9,7 +9,7 @@ const cases = [
   {
     test: /1\d{10}/,
     value: '1880000',
-    error: true
+    pass: false
   },
   {
     title: 'function, returns boolean, fail',
@@ -17,7 +17,7 @@ const cases = [
       return v > 10
     },
     value: 5,
-    error: true
+    pass: false
   },
   {
     title: 'function, returns boolean, pass',
@@ -39,7 +39,8 @@ const cases = [
         done('not minus')
       }, 10)
     },
-    error: 'not minus'
+    error: 'not minus',
+    pass: false
   },
   {
     title: 'function, returns Error',
@@ -50,7 +51,8 @@ const cases = [
 
       return new Error('a')
     },
-    error: 'a'
+    error: 'a',
+    pass: false
   },
   {
     title: 'array tester',
@@ -59,7 +61,43 @@ const cases = [
       /1\d{10}/
     ],
     value: '08800001111',
-    error: true
+    pass: false
+  },
+  {
+    title: 'preset',
+    test: [
+      'maxlength:5'
+    ],
+    presets: {
+      maxlength: (v, max) => {
+        return v.length <= Number(max)
+      }
+    },
+    value: '1234'
+  },
+  {
+    title: 'preset with multiple arguments',
+    test: [
+      'between:2,6'
+    ],
+    presets: {
+      between: (v, min, max) => {
+        return v.length >= Number(min) && v.length <= Number(max)
+      }
+    },
+    value: '1234'
+  },
+  {
+    title: 'preset init error',
+    test: [
+      'maxlength:5,6'
+    ],
+    presets: {
+      maxlength: (v, max) => {
+        return v.length <= Number(max)
+      }
+    },
+    initError: true
   }
 ]
 
@@ -69,10 +107,16 @@ cases.forEach((c) => {
     test,
     value,
     error,
+    pass,
     only,
     codec,
-    initError
+    initError,
+    presets
   } = c
+
+  const result = pass === false
+    ? false
+    : true
 
   const description = title
     || `${test.toString()}, ${value}, ${error ? 'fail' : 'pass'}`
@@ -87,43 +131,37 @@ cases.forEach((c) => {
     options.codec = codec
   }
 
+  if (presets) {
+    options.presets = presets
+  }
+
   _test(description, t => {
     let v
 
     try {
       v = new Validator(test, options)
     } catch (e) {
-      if (initError) {
+      if (!initError) {
+        t.fail()
         t.end()
         return
       }
     }
 
     if (initError) {
-      t.fail()
+      t.end()
+      return
     }
 
     v.check(value, (err, success) => {
-      if (!error) {
-        if (err) {
-          t.fail()
-          t.end()
-          return
-        }
+      t.is(success, result)
 
-        t.is(success, true)
-        t.end()
-        return
-      }
-
-      if (error === true) {
-        t.is(err, true)
+      if (err) {
+        t.is(err.message, error)
       } else {
-        t.is(err instanceof Error, true)
-        t.is(error, err.message)
+        t.is(err, null)
       }
 
-      t.is(success, false)
       t.end()
     })
   })
