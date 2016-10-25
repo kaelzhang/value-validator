@@ -43,25 +43,17 @@ validator
   err    // if any error throws or returns
 })
 
-validator.validate('foo').catch(err => {
-  err  // null
+// Examples
+validator.validate('foo').then(pass => {
   pass // false, to short
 })
 
-validator.validate('foo.bar', (err, pass) => {
-  err  // null
+validator.validate('foo.bar').then(pass => {
   pass // false, only letters, numbers and underscores.
 })
 
-validator.validate('steve', (err, pass) => {
+validator.validate('steve').catch(err => {
   err  // maybe `new Error('username "steve" already exists.')`
-  pass // false
-})
-
-validator.validate('cook', (err, pass) => {
-  // maybe "cook" is a valid username
-  err  // null
-  pass // true
 })
 ```
 
