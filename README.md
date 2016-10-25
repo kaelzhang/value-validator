@@ -106,20 +106,23 @@ To define an asynchronous validator, just returns a [`Promise`](https://develope
 
 ## Validator.defaults({preset=, codec=})
 
-Validator presets are pre-defined abbreviation of a certain validation, or a set of validations.
+Pre-defines certain option of `Validator` and returns a constructor.
+
+Validator presets are an abbreviation of a certain validation, or a set of validations.
 
 ```js
 const presets = {
 
   // To define a function-typed preset
   unique: function (v) {
-    const done = this.async()
-    asyncCheckExists(v, exists => {
-      if (exists) {
-        return done(new Error(`username "${v}" already exists.`))
-      }
+    return new Promise((resolve, reject) => {
+      asyncCheckExists(v, exists => {
+        if (exists) {
+          return reject(new Error(`username "${v}" already exists.`))
+        }
 
-      done(null)
+        resolve(true)
+      })
     })
   },
 
