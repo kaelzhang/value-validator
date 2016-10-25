@@ -1,7 +1,7 @@
 import test from 'ava'
-import Validator from '..'
+import V from '..'
 
-Validator.registerPresets({
+const presets = {
   'min-length': (v, min) => {
     return v.length >= Number(min)
   },
@@ -21,7 +21,7 @@ Validator.registerPresets({
           return reject('foo already taken')
         }
 
-        resolve(null)
+        resolve(true)
       }, 10)
     })
   },
@@ -34,6 +34,10 @@ Validator.registerPresets({
     'min-length:6',
     'username'
   ]
+}
+
+const Validator = V.defaults({
+  presets
 })
 
 
@@ -107,8 +111,7 @@ test.cb('min-length-6-username, foo, fail', t => {
 
 test.cb('async preset, min:3, and username, foo, fail', t => {
   new Validator('min-length:3|username').validate('foo', (err, result) => {
-    t.is(err instanceof Error, true)
-    t.is(err.message, 'foo already taken')
+    t.is(err, 'foo already taken')
     t.is(result, false)
     t.end()
   })

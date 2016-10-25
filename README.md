@@ -14,7 +14,7 @@
 
 # value-validator
 
-
+Low-level rule manager for validating values.
 
 ## Install
 
@@ -33,6 +33,15 @@ const validator = new Validator([
     return checkExistsPromise(v)
   }
 ])
+
+validator
+.valiate(value)
+.then((result) => {
+  result // whether passes the validation
+})
+.catch((err) => {
+  err    // if any error throws or returns
+})
 
 validator.validate('foo').catch(err => {
   err  // null
@@ -58,7 +67,18 @@ validator.validate('cook', (err, pass) => {
 
 ## new Validator(rule, options)
 
-- **rule** `RegExp|function()|String|Array.<mixed>` rule could be a regular expression, a function, a string (validator preset), or an array of mixed-type of the former three.
+- **rule** `RegExp|function()|String|Array.<mixed>` rule could be
+  - regular expression,
+  - function either returns a `Promise` or normal value
+  - string (validator preset),
+  - or an array of mixed-type of the former three.
+
+## .validate(value [, callback])
+
+- **value** `any` value to be validated
+- **callback** `function(err, pass)=`
+
+returns a `Promise` if no `callback`, or `undefined`
 
 ### Sync Function-type `rule`
 
@@ -68,8 +88,7 @@ If the function returns a `Boolean`, it indicates whether the validation is pass
 
 ```js
 const validator = new Validator(v => v > 10)
-validator.validate(5, (err, pass) => {
-  err // null
+validator.validate(5).then(pass => {
   pass // false
 })
 ```
@@ -84,24 +103,22 @@ const validator = new Validator(v => {
 
   return new Error('should larger than 10')
 })
-validator.validate(5, (err, pass) => {
+validator.validate(5).catch(err => {
   err // new Error('should larger than 10')
-  pass // false
 })
 ```
 
 ### Async validator
 
-To define an asynchronous validator, we need to use the common [this.async()](https://www.npmjs.com/package/wrap-as-async) style.
+To define an asynchronous validator, just returns a [`Promise`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
-See the first example.
-
-## Validator Presets
+## Validator.defaults({preset=, codec=})
 
 Validator presets are pre-defined abbreviation of a certain validation, or a set of validations.
 
 ```js
-Validator.registerPresets({
+const presets = {
+
   // To define a function-typed preset
   unique: function (v) {
     const done = this.async()
@@ -122,10 +139,12 @@ Validator.registerPresets({
     /^[a-z0-9_]+$/i,
     'unique'
   ]
-})
+}
+
+const MyValidator = Validator.defaults({presets})
 
 // Then we could use `username` as the test rule.
-const validator = new Validator('username')
+const validator = new MyValidator('username')
 ```
 
 ## License

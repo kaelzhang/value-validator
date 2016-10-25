@@ -4,38 +4,28 @@ import make_array from 'make-array'
 import util from 'util'
 
 
-class Validator {
-  static PRESETS = {}
+export default class Validator {
+  static defaults = ({presets, codec}) => {
+    return (rules, options = {}) => {
+      if (presets) {
+        options.presets = presets
+      }
 
-  // Registers a global preset
-  static registerPreset = (name, preset) => {
-    if (name in Validator.PRESETS) {
-      throw new Error(`value-validator: preset "${name}" defined.`)
+      if (codec) {
+        options.codec = codec
+      }
+
+      return new Validator(rules, options)
     }
-
-    if (typeof preset !== 'function' && !util.isArray(preset)) {
-      throw new TypeError(
-        `value-validator: preset only accepts function or array.`
-      )
-    }
-
-    Validator.PRESETS[name] = preset
-    return Validator
-  }
-
-  static registerPresets = (map) => {
-    for (const key in map) {
-      Validator.registerPreset(key, map[key])
-    }
-
-    return Validator
   }
 
   constructor (rules, {
-    codec = default_codec
+    codec = default_codec,
+    presets = {}
   } = {}) {
 
     this._codec = codec
+    this._presets = presets
     this._context = null
     this._rules = []
 
@@ -64,21 +54,30 @@ class Validator {
       callback(null, pass)
     })
     .catch((err) => {
+      console.log(err)
       callback(err, false)
     })
   }
 
   _validate (v) {
+    const rules = this._rules
+
     // if no rules, treat it as success
-    if (!this._rules.length) {
+    if (!rules.length) {
       return Promise.resolve(true)
     }
 
-    const rules = [].concat(this._rules)
-    const first = rules.pop()
+    const first = rules[0]
 
-    const result = rules.length
-      ? rules.reduce((prev, current) => {
+    const result = rules.length === 1
+      ? first(v)
+
+      : rules.reduce((prev, current, index) => {
+
+        if (index === 0) {
+          return prev
+        }
+
         return prev instanceof Promise
         ? prev
           .then((pass) => {
@@ -90,11 +89,9 @@ class Validator {
           })
 
         // Not a promise
-        : wrap_non_promise_result(prev, current)
+        : wrap_non_promise_result(prev, current, v)
 
       }, first(v))
-
-      : first(v)
 
     return result instanceof Promise
       ? result
@@ -130,7 +127,7 @@ class Validator {
   _decodePreset (rule) {
     return this._codec(rule)
     .forEach(({name, args}) => {
-      const preset = Validator.PRESETS[name]
+      const preset = this._presets[name]
 
       if (!preset) {
         throw new Error(`value-validator: unknown preset "${name}".`)
@@ -164,7 +161,7 @@ class Validator {
     }
 
     return function (v) {
-      return method.call(this, v, ...args)
+      return method(v, ...args)
     }
   }
 }
@@ -224,5 +221,3 @@ function default_codec (tester) {
     }
   })
 }
-
-export default Validator
