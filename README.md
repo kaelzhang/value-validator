@@ -30,18 +30,11 @@ const validator = new Validator([
   /.{4,}/,
   /^[a-z0-9_]+$/i,
   function (v) {
-    const done = this.async()
-    asyncCheckExists(v, exists => {
-      if (exists) {
-        return done(new Error(`username "${v}" already exists.`))
-      }
-
-      done(null)
-    })
+    return checkExistsPromise(v)
   }
 ])
 
-validator.validate('foo', (err, pass) => {
+validator.validate('foo').catch(err => {
   err  // null
   pass // false, to short
 })

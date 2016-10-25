@@ -1,5 +1,5 @@
-const ava = require('ava')
-const Validator = require('..')
+import ava from 'ava'
+import Validator from '..'
 
 const cases = [
   {
@@ -29,15 +29,15 @@ const cases = [
   {
     title: 'async function, pass',
     test: function (v) {
-      const done = this.async()
-      setTimeout(() => {
-        if (v < 0) {
-          return done(null)
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (v < 0) {
+            return resolve(null)
+          }
 
-        }
-
-        done('not minus')
-      }, 10)
+          reject('not minus')
+        }, 10)
+      })
     },
     error: 'not minus',
     pass: false

@@ -1,13 +1,36 @@
 'use strict'
 
-const make_array = require('make-array')
-const wrap = require('wrap-as-async')
-const async = require('async')
-
-const util = require('util')
+import make_array from 'make-array'
+import util from 'util'
 
 
 class Validator {
+  static PRESETS = {}
+
+  // Registers a global preset
+  static registerPreset = (name, preset) => {
+    if (name in Validator.PRESETS) {
+      throw new Error(`value-validator: preset "${name}" defined.`)
+    }
+
+    if (typeof preset !== 'function' && !util.isArray(preset)) {
+      throw new TypeError(
+        `value-validator: preset only accepts function or array.`
+      )
+    }
+
+    Validator.PRESETS[name] = preset
+    return Validator
+  }
+
+  static registerPresets = (map) => {
+    for (const key in map) {
+      Validator.registerPreset(key, map[key])
+    }
+
+    return Validator
+  }
+
   constructor (rules, {
     codec = default_codec
   } = {}) {
@@ -32,23 +55,50 @@ class Validator {
   }
 
   validate (v, callback) {
-    async.everySeries(this._rules, (tester, done) => {
-      const isAsync = tester.call(
-        this._context, v,
-        (err, pass) => {
-          err = typeof err === 'string'
-            ? new Error(err)
-            : err || null
+    if (!callback) {
+      return this._validate(v)
+    }
 
-          pass = determine_pass(err, pass)
-          done(err, pass)
-        }
-      )
-    }, (err, pass) => {
-      // async.everySeries sets `pass` as `undefined`
-      // if there is an error encountered.
-      callback(err, determine_pass(err, pass))
+    this._validate(v)
+    .then((pass) => {
+      callback(null, pass)
     })
+    .catch((err) => {
+      callback(err, false)
+    })
+  }
+
+  _validate (v) {
+    // if no rules, treat it as success
+    if (!this._rules.length) {
+      return Promise.resolve(true)
+    }
+
+    const rules = [].concat(this._rules)
+    const first = rules.pop()
+
+    const result = rules.length
+      ? rules.reduce((prev, current) => {
+        return prev instanceof Promise
+        ? prev
+          .then((pass) => {
+            if (pass) {
+              return current(v)
+            }
+
+            return false
+          })
+
+        // Not a promise
+        : wrap_non_promise_result(prev, current)
+
+      }, first(v))
+
+      : first(v)
+
+    return result instanceof Promise
+      ? result
+      : wrap_non_promise_result(result)
   }
 
   // @returns {function()} wrapped
@@ -60,15 +110,14 @@ class Validator {
     this._rules.push(this._wrapRule(rule))
   }
 
+  // returns `function()`
   _wrapRule (rule) {
     if (typeof rule === 'function') {
-      return wrap(rule)
+      return rule
     }
 
     if (util.isRegExp(rule)) {
-      return wrap((v) => {
-        return rule.test(v)
-      })
+      return (v) => rule.test(v)
     }
 
     const str = rule && rule.toString
@@ -103,7 +152,6 @@ class Validator {
   _wrapWithArgs (method, args) {
     // The first argument is the value
     const expectedArgLength = method.length - 1
-    const wrapped = wrap(method)
 
     if (expectedArgLength !== args.length) {
       const message = expectedArgLength === 1
@@ -115,11 +163,27 @@ class Validator {
       )
     }
 
-    return function (v, callback) {
-      const realArgs = [v, ...args, callback]
-      return wrapped.apply(this, realArgs)
+    return function (v) {
+      return method.call(this, v, ...args)
     }
   }
+}
+
+
+function wrap_non_promise_result (result, next, v) {
+  return result instanceof Error
+    // If returns an error, then reject
+    ? Promise.reject(result)
+    // else, as a result
+    : result
+      // Success
+      ? next
+        // If has next, then go to next validator
+        ? next(v)
+        // else, as success
+        : Promise.resolve(true)
+      // Failure
+      : Promise.resolve(false)
 }
 
 
@@ -161,34 +225,4 @@ function default_codec (tester) {
   })
 }
 
-
-Validator.PRESETS = {}
-
-
-// Registers a global preset
-Validator.registerPreset = (name, preset) => {
-  if (name in Validator.PRESETS) {
-    throw new Error(`value-validator: preset "${name}" defined.`)
-  }
-
-  if (typeof preset !== 'function' && !util.isArray(preset)) {
-    throw new TypeError(
-      `value-validator: preset only accepts function or array.`
-    )
-  }
-
-  Validator.PRESETS[name] = preset
-  return Validator
-}
-
-
-Validator.registerPresets = (map) => {
-  let key
-  for (key in map) {
-    Validator.registerPreset(key, map[key])
-  }
-  return Validator
-}
-
-
-module.exports = Validator
+export default Validator

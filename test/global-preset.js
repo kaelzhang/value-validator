@@ -1,5 +1,5 @@
-const test = require('ava')
-const Validator = require('..')
+import test from 'ava'
+import Validator from '..'
 
 Validator.registerPresets({
   'min-length': (v, min) => {
@@ -15,14 +15,15 @@ Validator.registerPresets({
   },
 
   username: function (v) {
-    const done = this.async()
-    setTimeout(() => {
-      if (v === 'foo') {
-        return done('foo already taken')
-      }
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (v === 'foo') {
+          return reject('foo already taken')
+        }
 
-      done(null)
-    }, 10)
+        resolve(null)
+      }, 10)
+    })
   },
 
   between: (v, min, max) => {
