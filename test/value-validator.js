@@ -33,13 +33,14 @@ const cases = [
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           if (v < 0) {
-            return resolve(null)
+            return resolve(true)
           }
 
           reject('not minus')
         }, 10)
       })
     },
+    value: 1,
     error: 'not minus',
     pass: false
   },

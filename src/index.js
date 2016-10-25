@@ -54,7 +54,6 @@ export default class Validator {
       callback(null, pass)
     })
     .catch((err) => {
-      console.log(err)
       callback(err, false)
     })
   }
@@ -78,7 +77,7 @@ export default class Validator {
           return prev
         }
 
-        return prev instanceof Promise
+        return is_promise_like(prev)
         ? prev
           .then((pass) => {
             if (pass) {
@@ -93,7 +92,7 @@ export default class Validator {
 
       }, first(v))
 
-    return result instanceof Promise
+    return is_promise_like(result)
       ? result
       : wrap_non_promise_result(result)
   }
@@ -167,6 +166,13 @@ export default class Validator {
 }
 
 
+function is_promise_like (promise) {
+  return promise
+    && typeof promise.then === 'function'
+    && typeof promise.catch === 'function'
+}
+
+
 function wrap_non_promise_result (result, next, v) {
   return result instanceof Error
     // If returns an error, then reject
@@ -181,16 +187,6 @@ function wrap_non_promise_result (result, next, v) {
         : Promise.resolve(true)
       // Failure
       : Promise.resolve(false)
-}
-
-
-// @returns {Boolean}
-function determine_pass (err, pass) {
-  return err
-    ? false
-    : pass === false
-      ? false
-      : true
 }
 
 
