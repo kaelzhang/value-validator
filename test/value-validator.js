@@ -3,6 +3,7 @@ import Validator from '..'
 
 const cases = [
   {
+    // only: true,
     test: /\d{2,6}/,
     value: '1234'
   },
@@ -27,7 +28,6 @@ const cases = [
     value: 11
   },
   {
-    only: true,
     title: 'async function, pass',
     test: function (v) {
       return new Promise((resolve, reject) => {
@@ -103,7 +103,7 @@ cases.forEach((c) => {
       t.is(success, result)
 
       if (err) {
-        t.is(err.message, error)
+        t.is(err.message || err, error)
       } else {
         t.is(err, null)
       }
