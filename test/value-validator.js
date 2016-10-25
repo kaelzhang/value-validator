@@ -27,6 +27,7 @@ const cases = [
     value: 11
   },
   {
+    only: true,
     title: 'async function, pass',
     test: function (v) {
       return new Promise((resolve, reject) => {
