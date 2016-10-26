@@ -1,6 +1,6 @@
 {
   "name": "value-validator",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Low-level rule manager for validating values.",
   "main": "./lib",
   "scripts": {

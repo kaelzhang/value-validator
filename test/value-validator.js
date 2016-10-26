@@ -64,6 +64,18 @@ const cases = [
     ],
     value: '08800001111',
     pass: false
+  },
+  {
+    title: 'thenable',
+    test: (x) => {
+      return {
+        then: (done) => {
+          done(x === 1)
+        }
+      }
+    },
+    value: 1,
+    pass: true
   }
 ]
 

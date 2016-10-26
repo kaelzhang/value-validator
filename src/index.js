@@ -50,12 +50,10 @@ export default class Validator {
     }
 
     this._validate(v)
-    .then((pass) => {
-      callback(null, pass)
-    })
-    .catch((err) => {
-      callback(err, false)
-    })
+    .then(
+      pass => callback(null, pass),
+      err => callback(err, false)
+    )
   }
 
   _validate (v) {
@@ -169,7 +167,6 @@ export default class Validator {
 function is_promise_like (promise) {
   return promise
     && typeof promise.then === 'function'
-    && typeof promise.catch === 'function'
 }
 
 
