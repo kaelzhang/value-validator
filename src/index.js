@@ -65,9 +65,10 @@ export default class Validator {
     }
 
     const first = rules[0]
+    const init = first.call(this._context, v)
 
     const result = rules.length === 1
-      ? first(v)
+      ? init
 
       : rules.reduce((prev, current, index) => {
 
@@ -79,7 +80,7 @@ export default class Validator {
         ? prev
           .then((pass) => {
             if (pass) {
-              return current(v)
+              return current.call(this._context, v)
             }
 
             return false
@@ -88,7 +89,7 @@ export default class Validator {
         // Not a promise
         : wrap_non_promise_result(prev, current, v)
 
-      }, first(v))
+      }, init)
 
     return is_promise_like(result)
       ? result
@@ -158,7 +159,7 @@ export default class Validator {
     }
 
     return function (v) {
-      return method(v, ...args)
+      return method.apply(this, [v, ...args])
     }
   }
 }

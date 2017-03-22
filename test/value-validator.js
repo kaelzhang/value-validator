@@ -21,6 +21,16 @@ const cases = [
     pass: false
   },
   {
+    title: 'test context',
+    context: {
+      a: 1
+    },
+    test (v) {
+      return v === this.a
+    },
+    value: 1
+  },
+  {
     title: 'function, returns boolean, pass',
     test: (v) => {
       return v > 10
@@ -86,7 +96,8 @@ cases.forEach((c) => {
     value,
     error,
     pass,
-    only
+    only,
+    context
   } = c
 
   const result = pass === false
@@ -109,6 +120,10 @@ cases.forEach((c) => {
       console.error(e)
       t.fail()
       return
+    }
+
+    if (context) {
+      v.context(context)
     }
 
     v.validate(value).then(

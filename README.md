@@ -72,6 +72,12 @@ validator.validate('steve').catch(err => {
 
 returns a `Promise` if no `callback`, or `undefined`
 
+## .context(context)
+
+- **context** `Object` specify this object for all validator functions.
+
+Returns `this`
+
 ### Sync Function-type `rule`
 
 The function should accept only one argument, which is the value to be validated.
