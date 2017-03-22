@@ -97,8 +97,8 @@ cases.forEach((c) => {
     || `${test.toString()}, ${value}, ${error ? 'fail' : 'pass'}`
 
   const _test = only
-    ? ava.only.cb
-    : ava.cb
+    ? ava.only
+    : ava
 
   _test(description, t => {
     let v
@@ -108,20 +108,17 @@ cases.forEach((c) => {
     } catch (e) {
       console.error(e)
       t.fail()
-      t.end()
       return
     }
 
-    v.validate(value, (err, success) => {
-      t.is(success, result)
+    v.validate(value).then(
+      success => {
+        t.is(success, result)
+      },
 
-      if (err) {
+      err => {
         t.is(err.message || err, error)
-      } else {
-        t.is(err, null)
       }
-
-      t.end()
-    })
+    )
   })
 })

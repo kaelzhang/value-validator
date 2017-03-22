@@ -3,7 +3,6 @@
 import make_array from 'make-array'
 import util from 'util'
 
-
 export default class Validator {
   static defaults = ({presets, codec}) => {
     return (rules, options = {}) => {
@@ -49,6 +48,7 @@ export default class Validator {
       return this._validate(v)
     }
 
+    console.warn('the callback will be removed in the next major version')
     this._validate(v)
     .then(
       pass => callback(null, pass),
