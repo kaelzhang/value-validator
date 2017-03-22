@@ -68,7 +68,7 @@ validator.validate('steve').catch(err => {
 ## .validate(value [, callback])
 
 - **value** `any` value to be validated
-- **callback** `function(err, pass)=`
+- **callback** `function(err, pass)=` using callback is deprecated since `2.2.0`, and the parameter will be removed in the next major version.
 
 returns a `Promise` if no `callback`, or `undefined`
 
